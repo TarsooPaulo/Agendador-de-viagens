@@ -1,4 +1,3 @@
-import { ArrowRight, UserRoundPlus } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.min.css";
 import { FormEvent, useState } from "react";
@@ -7,13 +6,21 @@ import InviteGuestsModal from "./invite-guests-modal";
 import ConfirmTripModal from "./confirm-trip-modal";
 import DestinationAndDateStep from "./steps/destination-and-date-step";
 import InviteGuestsStep from "./steps/invite-guests-step";
+import { DateRange } from "react-day-picker";
+import { api } from "../../lib/axios";
 
 export default function CreateTrip() {
   const [isGuestsInputOpen, setIsGuestsInputOpen] = useState(false);
   const [isGuestsModalOpen, setIsGuestsModalOpen] = useState(false);
   const [emailsToInvite, setEmailsToInvite] = useState([]);
   const [isConfirmTripModalOpen, setIsConfirmTripModalOpen] = useState(false);
-  const navigate = useNavigate();
+
+  const [destination, setDestination] = useState('')
+  const [ownerName, setOwnerName] = useState('')
+  const [ownerEmail, setOwnerEmail] = useState('')
+  const [eventStartAndEndDates, setEventStartAndEndDates] = useState<DateRange | undefined>() 
+
+  const navigate = useNavigate()
 
   function openGuestInput() {
     setIsGuestsInputOpen(true);
@@ -46,10 +53,43 @@ export default function CreateTrip() {
     setEmailsToInvite(newEmailList);
   }
 
-  function createTrip(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault;
+  async function createTrip(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-    navigate("/trips/123");
+    console.log(destination);
+    console.log(eventStartAndEndDates);
+    console.log(emailsToInvite);
+    console.log(ownerName);
+    console.log(ownerEmail);
+
+    if (!destination) {
+      return
+    }
+
+    if (!eventStartAndEndDates?.from || !eventStartAndEndDates?.to){
+      return
+    }
+
+    if(emailsToInvite.length = 0){
+      return
+    }
+
+    if (!ownerName || !ownerEmail){
+      return
+    }
+
+    const response = await api.post("/trips", {
+      destination,
+      starts_at: eventStartAndEndDates?.from,
+      ends_at: eventStartAndEndDates?.to,
+      emails_to_invite: emailsToInvite,
+      owner_name: ownerName,
+      owner_email: ownerEmail,
+    })
+    
+    const {tripId} = response.data
+
+    navigate(`/trips/${tripId}`);
   }
 
   function addNewEmailToInvite(event: FormEvent<HTMLFormElement>) {
@@ -88,6 +128,9 @@ export default function CreateTrip() {
             closeGuestsInput={closeGuestsInput}
             isGuestsInputOpen={isGuestsInputOpen}
             openGuestsInput={openGuestInput}
+            setDestination={setDestination}
+            eventStartAndEndDates={eventStartAndEndDates}
+            setEventStartAndEndDates={setEventStartAndEndDates}
           />
 
           {isGuestsInputOpen && (
@@ -125,6 +168,8 @@ export default function CreateTrip() {
         <ConfirmTripModal
           closeConfirmTripModal={closeConfirmTripModal}
           createTrip={createTrip}
+          setOwnerName={setOwnerName}
+          setOwnerEmail={setOwnerEmail}
         />
       )}
       <ToastContainer newestOnTop={true} theme="dark" autoClose={3500} />
